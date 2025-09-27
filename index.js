@@ -80,7 +80,7 @@ setInterval(() => {
     process.exit(1);
   }
 }, 30000);
-let phoneNumber = "911234567890";
+let phoneNumber = "";
 let owner = JSON.parse(fs.readFileSync("./data/owner.json"));
 global.botname = "LUCKY TECH HUB BOT";
 global.themeemoji = "•";
