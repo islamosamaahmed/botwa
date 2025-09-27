@@ -49,6 +49,7 @@ const {
 } = require("@whiskeysockets/baileys");
 const NodeCache = require("node-cache");
 const pino = require("pino");
+const qrcode = require("qrcode-terminal");
 const readline = require("readline");
 const {
   parsePhoneNumber
@@ -113,7 +114,6 @@ async function startXeonBotInc() {
     "logger": pino({
       "level": "silent"
     }),
-    "printQRInTerminal": !pairingCode,
     "browser": ["Ubuntu", "Chrome", "20.0.04"],
     "auth": {
       "creds": state.creds,
@@ -221,8 +221,14 @@ async function startXeonBotInc() {
   XeonBotInc.ev.on("connection.update", async update => {
     const {
       connection: connection,
-      lastDisconnect: lastDisconnect
+      lastDisconnect: lastDisconnect,
+      qr
     } = update;
+    if (qr) {
+      qrcode.generate(qr, {
+        small: true
+      });
+    }
     if (connection === 'open') {
 		if (pairingCode && !XeonBotInc.authState.creds.registered) {
 			if (useMobile) {
