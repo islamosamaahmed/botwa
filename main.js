@@ -308,6 +308,11 @@ async function handleMessages(sock, messageUpdate, printLog) {
         let commandExecuted = false;
 
         switch (true) {
+            case userMessage === '.myid':
+                // Temporary command to get user's JID for debugging
+                await sock.sendMessage(chatId, { text: `Your JID is: ${senderId}` }, { quoted: message });
+                commandExecuted = true;
+                break;
             case userMessage === '.simage': {
                 const quotedMessage = message.message?.extendedTextMessage?.contextInfo?.quotedMessage;
                 if (quotedMessage?.stickerMessage) {
