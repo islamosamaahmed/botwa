@@ -9,7 +9,7 @@ const ytdl = require('ytdl-core');
 const path = require('path');
 const axios = require('axios');
 const ffmpeg = require('fluent-ffmpeg');
-const { addWelcome, delWelcome, isWelcomeOn, addGoodbye, delGoodBye, isGoodByeOn, isSudo } = require('./lib/index');
+const { addWelcome, delWelcome, isWelcomeOn, addGoodbye, delGoodBye, isGoodByeOn, isSudo, isOwner } = require('./lib/index');
 const { autotypingCommand, isAutotypingEnabled, handleAutotypingForMessage, handleAutotypingForCommand, showTypingAfterCommand } = require('./commands/autotyping');
 const { autoreadCommand, isAutoreadEnabled, handleAutoread } = require('./commands/autoread');
 
@@ -185,7 +185,7 @@ async function handleMessages(sock, messageUpdate, printLog) {
         try {
             const data = JSON.parse(fs.readFileSync('./data/messageCount.json'));
             // Allow owner/sudo to use bot even in private mode
-            if (!data.isPublic && !message.key.fromMe && !senderIsSudo) {
+            if (!data.isPublic && !isOwner(senderId) && !senderIsSudo) {
                 return; // Silently ignore messages from non-owners when in private mode
             }
         } catch (error) {
@@ -227,7 +227,7 @@ async function handleMessages(sock, messageUpdate, printLog) {
         }
 
         // PM blocker: block non-owner DMs when enabled (do not ban)
-        if (!isGroup && !message.key.fromMe && !senderIsSudo) {
+        if (!isGroup && !isOwner(senderId) && !senderIsSudo) {
             try {
                 const pmState = readPmBlockerState();
                 if (pmState.enabled) {
@@ -297,7 +297,7 @@ async function handleMessages(sock, messageUpdate, printLog) {
 
         // Check owner status for owner commands
         if (isOwnerCommand) {
-            if (!message.key.fromMe && !senderIsSudo) {
+            if (!isOwner(senderId) && !senderIsSudo) {
                 await sock.sendMessage(chatId, { text: '❌ This command is only available for the owner or sudo!' }, { quoted: message });
                 return;
             }
@@ -375,7 +375,7 @@ async function handleMessages(sock, messageUpdate, printLog) {
                 break;
             case userMessage.startsWith('.mode'):
                 // Check if sender is the owner
-                if (!message.key.fromMe && !senderIsSudo) {
+                if (!isOwner(senderId) && !senderIsSudo) {
                     await sock.sendMessage(chatId, { text: 'Only bot owner can use this command!', ...channelInfo }, { quoted: message });
                     return;
                 }
@@ -422,7 +422,7 @@ async function handleMessages(sock, messageUpdate, printLog) {
                 }
                 break;
             case userMessage.startsWith('.anticall'):
-                if (!message.key.fromMe && !senderIsSudo) {
+                if (!isOwner(senderId) && !senderIsSudo) {
                     await sock.sendMessage(chatId, { text: 'Only owner/sudo can use anticall.' }, { quoted: message });
                     break;
                 }
@@ -432,7 +432,7 @@ async function handleMessages(sock, messageUpdate, printLog) {
                 }
                 break;
             case userMessage.startsWith('.pmblocker'):
-                if (!message.key.fromMe && !senderIsSudo) {
+                if (!isOwner(senderId) && !senderIsSudo) {
                     await sock.sendMessage(chatId, { text: 'Only owner/sudo can use pmblocker.' }, { quoted: message });
                     commandExecuted = true;
                     break;
@@ -447,7 +447,7 @@ async function handleMessages(sock, messageUpdate, printLog) {
                 await ownerCommand(sock, chatId);
                 break;
             case userMessage === '.tagall':
-                if (isSenderAdmin || message.key.fromMe) {
+                if (isSenderAdmin || isOwner(senderId)) {
                     await tagAllCommand(sock, chatId, senderId, message);
                 } else {
                     await sock.sendMessage(chatId, { text: 'Sorry, only group admins can use the .tagall command.', ...channelInfo }, { quoted: message });
@@ -622,7 +622,7 @@ async function handleMessages(sock, messageUpdate, printLog) {
                         isSenderAdmin = adminStatus.isSenderAdmin;
                     }
 
-                    if (isSenderAdmin || message.key.fromMe) {
+                    if (isSenderAdmin || isOwner(senderId)) {
                         await welcomeCommand(sock, chatId, message);
                     } else {
                         await sock.sendMessage(chatId, { text: 'Sorry, only group admins can use this command.', ...channelInfo }, { quoted: message });
@@ -639,7 +639,7 @@ async function handleMessages(sock, messageUpdate, printLog) {
                         isSenderAdmin = adminStatus.isSenderAdmin;
                     }
 
-                    if (isSenderAdmin || message.key.fromMe) {
+                    if (isSenderAdmin || isOwner(senderId)) {
                         await goodbyeCommand(sock, chatId, message);
                     } else {
                         await sock.sendMessage(chatId, { text: 'Sorry, only group admins can use this command.', ...channelInfo }, { quoted: message });
@@ -680,7 +680,7 @@ async function handleMessages(sock, messageUpdate, printLog) {
 
                 // Check if sender is admin or bot owner
                 const chatbotAdminStatus = await isAdmin(sock, chatId, senderId);
-                if (!chatbotAdminStatus.isSenderAdmin && !message.key.fromMe) {
+                if (!chatbotAdminStatus.isSenderAdmin && !isOwner(senderId)) {
                     await sock.sendMessage(chatId, { text: '*Only admins or bot owner can use this command*', ...channelInfo }, { quoted: message });
                     return;
                 }
